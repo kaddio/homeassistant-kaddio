@@ -6,7 +6,10 @@ from homeassistant.config_entries import ConfigEntryState
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
-from pytest_homeassistant_custom_component.common import async_fire_time_changed
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+    async_fire_time_changed,
+)
 
 from custom_components.kaddio.const import (
     CONF_LEAD_MINUTES,
@@ -83,8 +86,12 @@ async def test_activities_ignored_by_default(hass, freezer, mock_api, config_ent
 
 async def test_options_change_timing(hass, freezer, mock_api, config_entry):
     mock_api.events = events_payload(booking("b1", iso(10), iso(10, 45)))
-    hass.config_entries.async_update_entry(
-        config_entry, options={CONF_LEAD_MINUTES: 1, CONF_TRAIL_MINUTES: 1}
+    config_entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Kaddio",
+        unique_id=config_entry.unique_id,
+        data=dict(config_entry.data),
+        options={CONF_LEAD_MINUTES: 1, CONF_TRAIL_MINUTES: 1},
     )
     await _setup(hass, config_entry, freezer)
     busy = _entity_id(hass, config_entry, "binary_sensor", "busy")
