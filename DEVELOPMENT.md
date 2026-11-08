@@ -28,7 +28,7 @@ pip install -r requirements_test.txt
 pytest
 ```
 
-Needs Python 3.13 or newer. `tests/test_pure_*.py` also run without Home Assistant:
+Needs Python 3.14 or newer, the version Home Assistant 2026.11 requires. `tests/test_pure_*.py` also run without Home Assistant:
 `python3 -m unittest discover -s tests -p 'test_pure_*.py'`. A weekly workflow runs the tests against the Home
 Assistant beta.
 
