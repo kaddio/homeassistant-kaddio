@@ -58,3 +58,11 @@ day back to 60 days ahead; the busy sensor changes state at exact times between 
 ```
 python3 -m unittest discover -s tests
 ```
+
+## Releasing
+
+1. Bump `version` in `custom_components/kaddio/manifest.json` and push to `main`.
+2. Tag and push: `git tag v<version> && git push origin v<version>`.
+
+The *Release* workflow checks that the tag matches the manifest version, runs the tests and publishes the GitHub
+release with generated notes. HACS then offers it as an update.
