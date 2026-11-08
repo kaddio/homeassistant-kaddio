@@ -1,0 +1,71 @@
+{
+  "config": {
+    "step": {
+      "reauth_confirm": {
+        "title": "Kaddio token no longer works",
+        "description": "Enter a new administrator API token.",
+        "data": {
+          "token": "API token"
+        }
+      },
+      "user": {
+        "title": "Kaddio organization",
+        "description": "Use an administrator API token for an organization with the API module enabled. The address is your Kaddio address, for example https://myclinic.kaddio.com.",
+        "data": {
+          "base_url": "Kaddio address",
+          "token": "API token"
+        }
+      },
+      "place": {
+        "title": "Choose room",
+        "description": "Create one calendar per room or place. Run the setup again to add more.",
+        "data": {
+          "name": "Name",
+          "place_id": "Room / place"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not reach Kaddio.",
+      "invalid_base_url": "Enter the address as https://yourorg.kaddio.com",
+      "invalid_token": "Kaddio refused the token. It must belong to an administrator at an organization with the API module."
+    },
+    "abort": {
+      "already_configured": "This calendar is already added.",
+      "reauth_successful": "API token updated."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Timing",
+        "data": {
+          "lead_minutes": "Minutes before an entry starts",
+          "trail_minutes": "Minutes after an entry ends",
+          "event_kinds": "What counts as busy"
+        },
+        "data_description": {
+          "lead_minutes": "The busy sensor turns on this long before the start.",
+          "trail_minutes": "The busy sensor stays on this long after the end.",
+          "event_kinds": "Individual client meetings and group sessions by default. Calendar entries such as lunch are ignored unless you add them."
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "busy": {
+        "name": "Busy"
+      }
+    }
+  },
+  "selector": {
+    "event_kinds": {
+      "options": {
+        "booking": "Client meetings",
+        "session": "Group sessions",
+        "cal": "Calendar entries"
+      }
+    }
+  }
+}

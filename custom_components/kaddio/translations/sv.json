@@ -1,0 +1,71 @@
+{
+  "config": {
+    "step": {
+      "reauth_confirm": {
+        "title": "Kaddio-token fungerar inte längre",
+        "description": "Ange en ny API-token för administratör.",
+        "data": {
+          "token": "API-token"
+        }
+      },
+      "user": {
+        "title": "Kaddio-organisation",
+        "description": "Använd en API-token för en administratör i en organisation med API-modulen aktiverad. Adressen är din Kaddio-adress, t.ex. https://minklinik.kaddio.com.",
+        "data": {
+          "base_url": "Kaddio-adress",
+          "token": "API-token"
+        }
+      },
+      "place": {
+        "title": "Välj rum",
+        "description": "Skapar en kalender per rum eller plats. Kör installationen igen för att lägga till fler.",
+        "data": {
+          "name": "Namn",
+          "place_id": "Rum / plats"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Kunde inte nå Kaddio.",
+      "invalid_base_url": "Ange adressen som https://dinorg.kaddio.com",
+      "invalid_token": "Kaddio avvisade token. Den måste tillhöra en administratör i en organisation med API-modulen."
+    },
+    "abort": {
+      "already_configured": "Kalendern är redan tillagd.",
+      "reauth_successful": "API-token uppdaterad."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Tider",
+        "data": {
+          "lead_minutes": "Minuter före start",
+          "trail_minutes": "Minuter efter slut",
+          "event_kinds": "Vad räknas som upptaget"
+        },
+        "data_description": {
+          "lead_minutes": "Upptagen-sensorn slås på så här lång tid före start.",
+          "trail_minutes": "Upptagen-sensorn är kvar på så här lång tid efter slut.",
+          "event_kinds": "Som standard klientmöten och gruppsessioner. Kalenderposter som lunch ignoreras om du inte lägger till dem."
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "busy": {
+        "name": "Upptagen"
+      }
+    }
+  },
+  "selector": {
+    "event_kinds": {
+      "options": {
+        "booking": "Klientmöten",
+        "session": "Gruppsessioner",
+        "cal": "Kalenderposter"
+      }
+    }
+  }
+}

@@ -1,0 +1,90 @@
+blueprint:
+  name: Kaddio - prepare the room for client meetings
+  description: >
+    Heating and lights follow the Kaddio calendar of one room.
+    Heating goes to the comfort temperature a set time before a meeting starts
+    (it takes longer to warm a room than to turn on a light) and back to the
+    eco temperature once the room is free. Lights turn on at the busy sensor's
+    lead time and off after its trail time (set in the integration's options,
+    default 5 min before and 5 min after). Back-to-back meetings keep the
+    room on; nothing switches off in the gap.
+  domain: automation
+  input:
+    calendar:
+      name: Kaddio room calendar
+      selector:
+        entity: { integration: kaddio, domain: calendar }
+    busy_sensor:
+      name: Kaddio busy sensor (same room)
+      selector:
+        entity: { integration: kaddio, domain: binary_sensor }
+    lights:
+      name: Lights
+      default: {}
+      selector:
+        target: { entity: { domain: light } }
+    brightness_pct:
+      name: Light brightness
+      default: 80
+      selector:
+        number: { min: 1, max: 100, unit_of_measurement: "%" }
+    climate:
+      name: Thermostat
+      default: []
+      selector:
+        entity: { domain: climate, multiple: true }
+    heat_offset:
+      name: Start heating this long before a meeting
+      description: Written as a negative duration, e.g. -0:30:00 for 30 minutes.
+      default: "-0:30:00"
+      selector:
+        text: {}
+    comfort_temperature:
+      name: Comfort temperature
+      default: 21
+      selector:
+        number: { min: 5, max: 30, step: 0.5, unit_of_measurement: "°" }
+    eco_temperature:
+      name: Eco temperature (room free)
+      default: 17
+      selector:
+        number: { min: 5, max: 30, step: 0.5, unit_of_measurement: "°" }
+mode: queued
+trigger:
+  - platform: calendar
+    event: start
+    offset: !input heat_offset
+    entity_id: !input calendar
+    id: heat_up
+  - platform: state
+    entity_id: !input busy_sensor
+    to: "on"
+    id: room_on
+  - platform: state
+    entity_id: !input busy_sensor
+    to: "off"
+    id: room_off
+action:
+  - choose:
+      - conditions: "{{ trigger.id == 'heat_up' }}"
+        sequence:
+          - service: climate.set_temperature
+            target:
+              entity_id: !input climate
+            data:
+              temperature: !input comfort_temperature
+      - conditions: "{{ trigger.id == 'room_on' }}"
+        sequence:
+          - service: light.turn_on
+            target: !input lights
+            data:
+              brightness_pct: !input brightness_pct
+      - conditions: "{{ trigger.id == 'room_off' }}"
+        sequence:
+          - service: light.turn_off
+            target: !input lights
+          - service: climate.set_temperature
+            target:
+              entity_id: !input climate
+            data:
+              temperature: !input eco_temperature
