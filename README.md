@@ -66,3 +66,8 @@ python3 -m unittest discover -s tests
 
 The *Release* workflow checks that the tag matches the manifest version, runs the tests and publishes the GitHub
 release with generated notes. HACS then offers it as an update.
+
+## License and trademarks
+
+The code is MIT licensed. The Kaddio name and logos (`brand/`) are trademarks of Kaddio AB; the MIT license does not
+grant rights to them. `scripts/build_brand.sh` regenerates the PNGs in `custom_components/kaddio/brand/` from the SVGs.
