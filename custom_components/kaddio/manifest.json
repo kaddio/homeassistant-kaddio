@@ -8,10 +8,10 @@
     "@kaddio"
   ],
   "config_flow": true,
-  "documentation": "https://github.com/kaddio/homeassistant-kaddio",
+  "documentation": "https://github.com/kaddio/kaddio-homeassistant",
   "integration_type": "service",
   "iot_class": "cloud_polling",
-  "issue_tracker": "https://github.com/kaddio/homeassistant-kaddio/issues",
+  "issue_tracker": "https://github.com/kaddio/kaddio-homeassistant/issues",
   "requirements": [],
   "version": "0.0.0"
 }

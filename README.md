@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/kaddio/homeassistant-kaddio/main/custom_components/kaddio/brand/dark_logo.png">
-    <img alt="Kaddio" src="https://raw.githubusercontent.com/kaddio/homeassistant-kaddio/main/custom_components/kaddio/brand/logo.png" height="64">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/kaddio/kaddio-homeassistant/main/custom_components/kaddio/brand/dark_logo.png">
+    <img alt="Kaddio" src="https://raw.githubusercontent.com/kaddio/kaddio-homeassistant/main/custom_components/kaddio/brand/logo.png" height="64">
   </picture>
 </p>
 
@@ -23,7 +23,7 @@ It works per room: connect "Meeting room", "Treatment room 1" and so on, each wi
 
 **Quickest:** click this button while logged in to your Home Assistant.
 
-[![Open your Home Assistant instance and show this repository in the Marketplace.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=kaddio&repository=homeassistant-kaddio&category=integration)
+[![Open your Home Assistant instance and show this repository in the Marketplace.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=kaddio&repository=kaddio-homeassistant&category=integration)
 
 Then click **Download**. Home Assistant loads the integration right away; if it shows a repair asking for a restart, click it.
 
@@ -31,7 +31,7 @@ Then click **Download**. Home Assistant loads the integration right away; if it 
 
 1. Open the **Marketplace**.
 2. Click **Add from link**, or open the menu (⋮) → **Custom repositories**, and add
-   `https://github.com/kaddio/homeassistant-kaddio` as an **Integration**.
+   `https://github.com/kaddio/kaddio-homeassistant` as an **Integration**.
 3. Search for **Kaddio**, open it and click **Download**.
 4. If Home Assistant shows a repair asking for a restart, click it.
 
@@ -152,7 +152,7 @@ actions:
 | Nothing happens in the room | Check the Busy sensor first, then the automation's trace (*Show trace*), then try the light or plug by hand. |
 
 Logs: Settings → System → Logs, search for `kaddio`. Report problems at
-[github.com/kaddio/homeassistant-kaddio/issues](https://github.com/kaddio/homeassistant-kaddio/issues).
+[github.com/kaddio/kaddio-homeassistant/issues](https://github.com/kaddio/kaddio-homeassistant/issues).
 
 ## License and trademarks
 

@@ -59,7 +59,7 @@ Requires Home Assistant 2026.11 or newer (see `hacs.json`). Steps ([guide](https
 1. Repo is public with a description, topics, issues enabled and a README. (Done)
 2. The validation action and hassfest both pass, with no `ignore`. (Done, see `.github/workflows/validate.yml`)
 3. At least one full GitHub release exists, not only a tag. (Done, created by the Release workflow)
-4. Fork `hacs/default`, branch from `master`, and add `kaddio/homeassistant-kaddio` to the `integration` file in
+4. Fork `hacs/default`, branch from `master`, and add `kaddio/kaddio-homeassistant` to the `integration` file in
    alphabetical order.
 5. Open the PR from a **personal GitHub account** of someone who owns or substantially contributes to the repository, not from the organization. Fill in the
    PR template, with links to the latest release and to passing validation and hassfest runs.
