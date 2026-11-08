@@ -5,7 +5,7 @@
     "productivity_information.calendars_todos"
   ],
   "codeowners": [
-    "@rhymn"
+    "@kaddio/dev"
   ],
   "config_flow": true,
   "documentation": "https://github.com/kaddio/homeassistant-kaddio",

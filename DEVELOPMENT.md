@@ -61,7 +61,7 @@ Requires Home Assistant 2026.11 or newer (see `hacs.json`). Steps ([guide](https
 3. At least one full GitHub release exists, not only a tag. (Done, created by the Release workflow)
 4. Fork `hacs/default`, branch from `master`, and add `kaddio/homeassistant-kaddio` to the `integration` file in
    alphabetical order.
-5. Open the PR from a **personal GitHub account** (the one in `codeowners`), not from the organization. Fill in the
+5. Open the PR from a **personal GitHub account** of someone who owns or substantially contributes to the repository, not from the organization. Fill in the
    PR template, with links to the latest release and to passing validation and hassfest runs.
 6. Review can take months. Meanwhile users can install from the link in the README.
 
