@@ -30,7 +30,10 @@ from .schedule import ALL_KINDS, DEFAULT_KINDS
 
 
 def _normalize_base_url(raw: str) -> str | None:
-    parsed = urlparse(raw.strip())
+    raw = raw.strip()
+    if "://" not in raw:
+        raw = f"https://{raw}"
+    parsed = urlparse(raw)
     if parsed.scheme != "https" or not parsed.netloc:
         return None
     return f"https://{parsed.netloc}"

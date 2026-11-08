@@ -10,7 +10,7 @@
       },
       "user": {
         "title": "Kaddio organization",
-        "description": "Use an administrator API token for an organization with the API module enabled. The address is your Kaddio address, for example https://myclinic.kaddio.com.",
+        "description": "Use an administrator API token for an organization with the API module enabled. The address is your Kaddio address, for example myclinic.kaddio.com.",
         "data": {
           "base_url": "Kaddio address",
           "token": "API token"
@@ -27,7 +27,7 @@
     },
     "error": {
       "cannot_connect": "Could not reach Kaddio.",
-      "invalid_base_url": "Enter the address as https://yourorg.kaddio.com",
+      "invalid_base_url": "Enter your Kaddio address, for example myclinic.kaddio.com",
       "invalid_token": "Kaddio refused the token. It must belong to an administrator at an organization with the API module."
     },
     "abort": {

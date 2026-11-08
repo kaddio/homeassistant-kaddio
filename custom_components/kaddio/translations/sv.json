@@ -10,7 +10,7 @@
       },
       "user": {
         "title": "Kaddio-organisation",
-        "description": "Använd en API-token för en administratör i en organisation med API-modulen aktiverad. Adressen är din Kaddio-adress, t.ex. https://minklinik.kaddio.com.",
+        "description": "Använd en API-token för en administratör i en organisation med API-modulen aktiverad. Adressen är din Kaddio-adress, t.ex. minklinik.kaddio.com.",
         "data": {
           "base_url": "Kaddio-adress",
           "token": "API-token"
@@ -27,7 +27,7 @@
     },
     "error": {
       "cannot_connect": "Kunde inte nå Kaddio.",
-      "invalid_base_url": "Ange adressen som https://dinorg.kaddio.com",
+      "invalid_base_url": "Ange din Kaddio-adress, till exempel minklinik.kaddio.com",
       "invalid_token": "Kaddio avvisade token. Den måste tillhöra en administratör i en organisation med API-modulen."
     },
     "abort": {
