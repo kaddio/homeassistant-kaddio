@@ -67,5 +67,11 @@
         "cal": "Calendar entries"
       }
     }
+  },
+  "issues": {
+    "location_missing": {
+      "title": "Kaddio room was removed",
+      "description": "The room or place used by \"{name}\" no longer exists in Kaddio, so no bookings are shown. Remove this entry and add the integration again with another room."
+    }
   }
 }

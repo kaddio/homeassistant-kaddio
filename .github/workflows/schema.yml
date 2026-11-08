@@ -1,0 +1,21 @@
+name: Kaddio schema check
+
+on:
+  schedule:
+    - cron: "30 4 * * *"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - custom_components/kaddio/gql.py
+      - scripts/check_schema.py
+
+jobs:
+  schema:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install graphql-core
+      - run: python scripts/check_schema.py

@@ -61,6 +61,16 @@ class GqlTest(unittest.TestCase):
         self.assertEqual(result, {"r1": "Köket", "p1": "Kaddio Support (place)"})
         self.assertEqual(list(result), ["r1", "p1"])
 
+    def test_location_available(self):
+        payload = {"data": {
+            "findRooms": [{"_id": "r1", "deleted": False}, {"_id": "r2", "deleted": True}],
+            "findPlaces": [{"_id": "p1", "deleted": False}]}}
+        self.assertTrue(gql.location_available(payload, "r1"))
+        self.assertTrue(gql.location_available(payload, "p1"))
+        self.assertFalse(gql.location_available(payload, "r2"))  # deleted
+        self.assertFalse(gql.location_available(payload, "zzz"))  # gone
+        self.assertTrue(gql.location_available(payload, None))  # everything
+
     def test_bad_dates_skipped(self):
         payload = {"data": {"findEventsIndexed": [row("1", "booking", "nope", "x", bt="A")]}}
         self.assertEqual(gql.events_from_response(payload), [])

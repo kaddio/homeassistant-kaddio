@@ -26,6 +26,15 @@ required; the organization needs the API module.
 
 CI runs both, plus hassfest and the catalog validation action.
 
+## Staying compatible with Kaddio's API
+
+`scripts/check_schema.py` validates the integration's GraphQL queries against the schema Kaddio publishes at
+`<kaddio address>/graphql/schema`. The *Kaddio schema check* workflow runs it nightly and when `gql.py` changes, so a
+renamed or removed field is noticed the day after Kaddio ships it.
+
+If the chosen room or place is deleted or archived in Kaddio, the integration shows a Home Assistant repair notice
+("Kaddio room was removed"), and clears it when the room is back or the entry is removed.
+
 ## Releasing
 
 1. Bump `version` in `custom_components/kaddio/manifest.json` and push to `main`.

@@ -9,6 +9,7 @@ from aiohttp import ClientError, ClientTimeout
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
@@ -28,6 +29,7 @@ from .gql import (
     LOCATIONS_QUERY,
     GraphQLApiError,
     events_from_response,
+    location_available,
     graphql_endpoint,
     locations_from_response,
 )
@@ -76,7 +78,8 @@ async def async_fetch_locations(hass: HomeAssistant, base_url: str, token: str) 
 
 async def async_fetch_graphql_events(
     hass: HomeAssistant, base_url: str, token: str, location_id: str | None
-) -> list[KaddioEvent]:
+) -> tuple[list[KaddioEvent], bool]:
+    """Return (events, location_still_exists)."""
     now = dt_util.utcnow()
     variables = {
         "start": (now - timedelta(days=GRAPHQL_PAST_DAYS)).isoformat(),
@@ -85,9 +88,13 @@ async def async_fetch_graphql_events(
     }
     payload = await _post_graphql(hass, base_url, token, EVENTS_QUERY, variables)
     try:
-        return events_from_response(payload)
+        return events_from_response(payload), location_available(payload, location_id)
     except GraphQLApiError as err:
         _raise_for(err)
+
+
+def location_issue_id(entry_id: str) -> str:
+    return f"location_missing_{entry_id}"
 
 
 class KaddioCoordinator(DataUpdateCoordinator[list[KaddioEvent]]):
@@ -107,11 +114,29 @@ class KaddioCoordinator(DataUpdateCoordinator[list[KaddioEvent]]):
     async def _async_update_data(self) -> list[KaddioEvent]:
         data = self.config_entry.data
         location_id = data[CONF_LOCATION_ID]
-        return await async_fetch_graphql_events(
+        events, location_exists = await async_fetch_graphql_events(
             self.hass,
             data[CONF_BASE_URL],
             data[CONF_TOKEN],
             None if location_id == ALL_LOCATIONS else location_id,
+        )
+        self._update_location_issue(location_exists)
+        return events
+
+    def _update_location_issue(self, location_exists: bool) -> None:
+        """Tell the user when the chosen room was deleted or archived in Kaddio."""
+        issue_id = location_issue_id(self.config_entry.entry_id)
+        if location_exists:
+            ir.async_delete_issue(self.hass, DOMAIN, issue_id)
+            return
+        ir.async_create_issue(
+            self.hass,
+            DOMAIN,
+            issue_id,
+            is_fixable=False,
+            severity=ir.IssueSeverity.WARNING,
+            translation_key="location_missing",
+            translation_placeholders={"name": self.config_entry.title},
         )
 
     def events_between(self, start: datetime, end: datetime) -> list[KaddioEvent]:

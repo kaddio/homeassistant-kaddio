@@ -67,5 +67,11 @@
         "cal": "Kalenderposter"
       }
     }
+  },
+  "issues": {
+    "location_missing": {
+      "title": "Kaddio-rummet har tagits bort",
+      "description": "Rummet eller platsen som \"{name}\" använder finns inte längre i Kaddio, så inga bokningar visas. Ta bort den här posten och lägg till integrationen igen med ett annat rum."
+    }
   }
 }

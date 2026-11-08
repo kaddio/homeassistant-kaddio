@@ -5,6 +5,7 @@ from datetime import timedelta
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
@@ -131,3 +132,30 @@ async def test_unload(hass, freezer, mock_api, config_entry):
     await _setup(hass, config_entry, freezer)
     assert await hass.config_entries.async_unload(config_entry.entry_id)
     assert config_entry.state is ConfigEntryState.NOT_LOADED
+
+
+def _issue(hass, entry):
+    return ir.async_get(hass).async_get_issue(DOMAIN, f"location_missing_{entry.entry_id}")
+
+
+async def test_notice_when_room_is_deleted_and_cleared_when_back(hass, freezer, mock_api, config_entry):
+    mock_api.rooms = [{"_id": "room1", "deleted": True}]
+    await _setup(hass, config_entry, freezer)
+    assert _issue(hass, config_entry) is not None
+
+    mock_api.rooms = [{"_id": "room1", "deleted": False}]
+    await config_entry.runtime_data.async_refresh()
+    assert _issue(hass, config_entry) is None
+
+
+async def test_no_notice_when_room_exists(hass, freezer, mock_api, config_entry):
+    await _setup(hass, config_entry, freezer)
+    assert _issue(hass, config_entry) is None
+
+
+async def test_notice_removed_with_entry(hass, freezer, mock_api, config_entry):
+    mock_api.rooms = []
+    await _setup(hass, config_entry, freezer)
+    assert _issue(hass, config_entry) is not None
+    await hass.config_entries.async_remove(config_entry.entry_id)
+    assert _issue(hass, config_entry) is None

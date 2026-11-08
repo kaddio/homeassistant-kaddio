@@ -64,9 +64,10 @@ def mock_api():
     async def fake_post(hass, base_url, token, query, variables):
         if state.error is not None:
             raise state.error
-        if "findRooms" in query:
+        if "findEventsIndexed" not in query:
             return locations_payload()
-        return state.events
+        data = {**state.events["data"], "findRooms": state.rooms, "findPlaces": state.places}
+        return {"data": data}
 
     with patch(
         "custom_components.kaddio.coordinator._post_graphql",
@@ -79,6 +80,8 @@ def types_namespace():
     class State:
         events = events_payload()
         error = None
+        rooms = [{"_id": "room1", "deleted": False}]
+        places = [{"_id": "place1", "deleted": False}]
 
     return State()
 

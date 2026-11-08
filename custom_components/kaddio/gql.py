@@ -25,6 +25,8 @@ query ($start: Date!, $end: Date!, $locationId: ID) {
     _id start end type title calNote placeId
     bookingType { name }
   }
+  findRooms { _id deleted }
+  findPlaces { _id deleted }
 }
 """
 
@@ -103,3 +105,12 @@ def events_from_response(payload: dict[str, Any]) -> list[KaddioEvent]:
             )
         )
     return sorted(events, key=lambda e: (e.start, e.end, e.uid))
+
+
+def location_available(payload: dict[str, Any], location_id: str | None) -> bool:
+    """True if the chosen room/place still exists (always True for "everything")."""
+    if location_id is None:
+        return True
+    data = unwrap(payload)
+    rows = (data.get("findRooms") or []) + (data.get("findPlaces") or [])
+    return any(r["_id"] == location_id and not r.get("deleted") for r in rows)
