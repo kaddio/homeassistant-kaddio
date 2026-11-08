@@ -130,25 +130,25 @@ async def test_lead_and_trail_minutes_come_from_options(hass, freezer, kaddio_ap
 async def test_next_meeting_attributes_ignore_kinds_that_do_not_count(hass, freezer, kaddio_api, room_entry):
     kaddio_api.events = events_payload(
         calendar_entry("c1", timestamp(9), timestamp(9, 30)),
-        client_meeting("m1", timestamp(10), timestamp(10, 45), "Samtal"),
+        client_meeting("m1", timestamp(10), timestamp(10, 45), "Consultation"),
     )
 
     await set_up(hass, room_entry, freezer)
 
     attributes = hass.states.get(busy_sensor_id(hass, room_entry)).attributes
-    assert attributes["next_summary"] == "Samtal"
+    assert attributes["next_summary"] == "Consultation"
     assert attributes["next_start"] == timestamp(10)
 
 
 async def test_calendar_shows_the_upcoming_meeting(hass, freezer, kaddio_api, room_entry):
     kaddio_api.events = events_payload(
-        client_meeting("m1", timestamp(10), timestamp(10, 45), "Samtal")
+        client_meeting("m1", timestamp(10), timestamp(10, 45), "Consultation")
     )
 
     await set_up(hass, room_entry, freezer)
 
     calendar = entity_id_of(hass, room_entry, "calendar", "calendar")
-    assert hass.states.get(calendar).attributes["message"] == "Samtal"
+    assert hass.states.get(calendar).attributes["message"] == "Consultation"
 
 
 async def test_rejected_token_starts_reauthentication(hass, freezer, kaddio_api, room_entry):

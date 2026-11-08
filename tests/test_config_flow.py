@@ -15,7 +15,7 @@ from custom_components.kaddio.const import (
 from custom_components.kaddio.models import Locations
 
 LIST_LOCATIONS = "custom_components.kaddio.client.KaddioClient.async_list_locations"
-KITCHEN_AND_SUPPORT = Locations(rooms={"room1": "Köket"}, places={"place1": "Kaddio Support"})
+KITCHEN_AND_SUPPORT = Locations(rooms={"room1": "Kitchen"}, places={"place1": "Kaddio Support"})
 
 
 async def start_flow(hass):
@@ -39,11 +39,11 @@ async def test_full_flow_creates_an_entry_for_the_chosen_room(hass):
     assert flow["step_id"] == "location"
 
     result = await hass.config_entries.flow.async_configure(
-        flow["flow_id"], {CONF_NAME: "Köket", CONF_LOCATION_ID: "room1"}
+        flow["flow_id"], {CONF_NAME: "Kitchen", CONF_LOCATION_ID: "room1"}
     )
 
     assert result["type"] == FlowResultType.CREATE_ENTRY
-    assert result["title"] == "Köket"
+    assert result["title"] == "Kitchen"
     assert result["data"] == {
         CONF_BASE_URL: "https://clinic.kaddio.com",
         CONF_TOKEN: "secret",

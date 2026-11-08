@@ -30,3 +30,45 @@ jobs:
           python-version: "3.14"
       - run: pip install -r requirements_test.txt
       - run: pytest -q
+
+  release:
+    needs: [hassfest, hacs, tests]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: release
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Work out the next version
+        id: next
+        run: |
+          latest=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-version:refname | head -n 1)
+          latest=${latest:-v0.0.0}
+          IFS=. read -r major minor patch <<< "${latest#v}"
+          echo "version=${major}.${minor}.$((patch + 1))" >> "$GITHUB_OUTPUT"
+
+      - name: Tag a release commit that carries the version
+        env:
+          VERSION: ${{ steps.next.outputs.version }}
+        run: |
+          manifest=custom_components/kaddio/manifest.json
+          jq --arg version "$VERSION" '.version = $version' "$manifest" > manifest.tmp
+          mv manifest.tmp "$manifest"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit --all --message "Release v${VERSION}"
+          git tag "v${VERSION}"
+          git push origin "v${VERSION}"
+
+      - name: Publish the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.next.outputs.version }}
+        run: gh release create "v${VERSION}" --title "v${VERSION}" --generate-notes --verify-tag
+

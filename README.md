@@ -11,7 +11,7 @@ Let your Kaddio calendar run your rooms. When a client is booked in a room, the 
 before and go off a few minutes after. The same signal can warm up the room, switch a "meeting in progress" sign,
 or anything else Home Assistant can control.
 
-It works per room: connect "Konferensrummet", "Behandlingsrum 1" and so on, each with its own timing.
+It works per room: connect "Meeting room", "Treatment room 1" and so on, each with its own timing.
 
 ## What you need
 
@@ -37,13 +37,13 @@ Then click **Download**. Home Assistant loads the integration right away; if it 
 
 ## Step 2: Create an API key in Kaddio
 
-1. In Kaddio, go to **Inställningar → API**.
-2. Click **Ny API-nyckel** and name it, for example `Home Assistant`.
-3. Under **Tillåtna GraphQL-endpoints**, select only these three, so the key can do nothing else:
+1. In Kaddio, go to **Settings → API** and open the **API keys** section.
+2. Create a new API key and name it, for example `Home Assistant`.
+3. In the list of allowed GraphQL endpoints, select only these three, so the key can do nothing else:
    `findEventsIndexed`, `findRooms` and `findPlaces`.
-4. Click **Skapa nyckel** and **copy the key**. It is shown only once.
+4. Create the key and **copy it**. It is shown only once.
 
-You can revoke the key at any time on the same page (**Återkalla**).
+You can revoke the key at any time on the same page.
 
 ## Step 3: Connect a room
 
@@ -51,7 +51,7 @@ You can revoke the key at any time on the same page (**Återkalla**).
 
 1. In Home Assistant, go to **Settings → Devices & services → Add integration** and search for **Kaddio**.
 2. Enter your Kaddio address (for example `myclinic.kaddio.com`) and paste the API key.
-3. Choose the **room** (a *Rum* in Kaddio's settings). You can also choose a *Plats*, or everything.
+3. Choose the **room** (the rooms you see under Settings in Kaddio). You can also choose a place (called a location in Kaddio), or everything.
 4. Give it a name, for example the room's name.
 
 Repeat for each room you want to automate. Each room gets:
@@ -59,14 +59,14 @@ Repeat for each room you want to automate. Each room gets:
 | Entity | What it tells you |
 | --- | --- |
 | **Calendar** | The room's bookings and activities, visible in Home Assistant's calendar. |
-| **Busy** (*Upptagen*) | **On** from a few minutes before a booking starts until a few minutes after it ends. |
+| **Busy** | **On** from a few minutes before a booking starts until a few minutes after it ends. |
 
 ## Step 4: Tune what counts and when
 
 Open the integration, click the gear icon next to the room, and set:
 
 - **What counts as busy:** client meetings and group sessions by default. Tick *Calendar entries*
-  (*Kalenderposter*) to include activities too, such as a cleaning block.
+  to include activities too, such as a cleaning block.
 - **Minutes before start / after end:** how early the room switches on and how long it stays on.
   Back-to-back bookings keep the room on without switching off in between.
 

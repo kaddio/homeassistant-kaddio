@@ -28,7 +28,7 @@ def events_payload(*rows: dict) -> dict:
     return {"data": {"findEventsIndexed": list(rows)}}
 
 
-def client_meeting(uid: str, start: str, end: str, booking_type: str = "Samtal") -> dict:
+def client_meeting(uid: str, start: str, end: str, booking_type: str = "Consultation") -> dict:
     return {
         "_id": uid,
         "type": "booking",

@@ -28,8 +28,8 @@ def events_payload(*rows):
 class ParseEventsTest(unittest.TestCase):
     def test_keeps_meetings_sessions_and_calendar_entries_sorted_by_start(self):
         payload = events_payload(
-            event_row("late", "booking", "2026-11-09T10:00:00.000Z", "2026-11-09T10:45:00.000Z", booking_type="Samtal"),
-            event_row("early", "cal", "2026-11-09T08:00:00.000Z", "2026-11-09T09:00:00.000Z", title="Möte", note="Zoom"),
+            event_row("late", "booking", "2026-11-09T10:00:00.000Z", "2026-11-09T10:45:00.000Z", booking_type="Consultation"),
+            event_row("early", "cal", "2026-11-09T08:00:00.000Z", "2026-11-09T09:00:00.000Z", title="Meeting", note="Zoom"),
             event_row("group", "session", "2026-11-09T12:00:00.000Z", "2026-11-09T13:00:00.000Z", booking_type="Grupp"),
         )
 
@@ -43,21 +43,21 @@ class ParseEventsTest(unittest.TestCase):
 
     def test_calendar_entry_uses_title_and_note(self):
         payload = events_payload(
-            event_row("a", "cal", "2026-11-09T08:00:00Z", "2026-11-09T09:00:00Z", title="Möte", note="Zoom")
+            event_row("a", "cal", "2026-11-09T08:00:00Z", "2026-11-09T09:00:00Z", title="Meeting", note="Zoom")
         )
 
         event = api.parse_events(payload)[0]
 
-        self.assertEqual((event.summary, event.description), ("Möte", "Zoom"))
+        self.assertEqual((event.summary, event.description), ("Meeting", "Zoom"))
 
     def test_meeting_uses_booking_type_name_and_no_description(self):
         payload = events_payload(
-            event_row("a", "booking", "2026-11-09T10:00:00Z", "2026-11-09T10:45:00Z", booking_type="Samtal")
+            event_row("a", "booking", "2026-11-09T10:00:00Z", "2026-11-09T10:45:00Z", booking_type="Consultation")
         )
 
         event = api.parse_events(payload)[0]
 
-        self.assertEqual((event.summary, event.description), ("Samtal", ""))
+        self.assertEqual((event.summary, event.description), ("Consultation", ""))
         self.assertEqual(event.start, datetime(2026, 11, 9, 10, 0, tzinfo=timezone.utc))
 
     def test_ignores_other_event_types(self):
@@ -69,13 +69,13 @@ class ParseEventsTest(unittest.TestCase):
         self.assertEqual(api.parse_events(payload), [])
 
     def test_skips_rows_with_unreadable_dates(self):
-        payload = events_payload(event_row("a", "booking", "nope", "x", booking_type="Samtal"))
+        payload = events_payload(event_row("a", "booking", "nope", "x", booking_type="Consultation"))
 
         self.assertEqual(api.parse_events(payload), [])
 
     def test_end_before_start_is_clamped_to_start(self):
         payload = events_payload(
-            event_row("a", "booking", "2026-11-09T10:00:00Z", "2026-11-09T09:00:00Z", booking_type="Samtal")
+            event_row("a", "booking", "2026-11-09T10:00:00Z", "2026-11-09T09:00:00Z", booking_type="Consultation")
         )
 
         event = api.parse_events(payload)[0]
@@ -102,19 +102,19 @@ class ParseLocationsTest(unittest.TestCase):
         payload = {
             "data": {
                 "findRooms": [
-                    {"_id": "r1", "name": "Köket", "deleted": False},
-                    {"_id": "r2", "name": "Borttaget", "deleted": True},
+                    {"_id": "r1", "name": "Kitchen", "deleted": False},
+                    {"_id": "r2", "name": "Removed room", "deleted": True},
                 ],
                 "findPlaces": [
                     {"_id": "p1", "name": "Kaddio Support", "deleted": False},
-                    {"_id": "p2", "name": "Gammal", "deleted": True},
+                    {"_id": "p2", "name": "Old place", "deleted": True},
                 ],
             }
         }
 
         locations = api.parse_locations(payload)
 
-        self.assertEqual(locations.rooms, {"r1": "Köket"})
+        self.assertEqual(locations.rooms, {"r1": "Kitchen"})
         self.assertEqual(locations.places, {"p1": "Kaddio Support"})
 
 
