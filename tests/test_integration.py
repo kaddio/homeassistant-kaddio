@@ -1,5 +1,3 @@
-"""Setup, busy-sensor timing, options and failure handling, inside Home Assistant."""
-
 from datetime import timedelta
 
 from homeassistant.config_entries import ConfigEntryState
@@ -13,149 +11,186 @@ from pytest_homeassistant_custom_component.common import (
 )
 
 from custom_components.kaddio.const import (
+    CONF_EVENT_KINDS,
     CONF_LEAD_MINUTES,
     CONF_TRAIL_MINUTES,
     DOMAIN,
 )
 
-from .conftest import activity, booking, events_payload, iso
+from conftest import calendar_entry, client_meeting, events_payload, timestamp
+
+MORNING = "2026-11-09T08:00:00+00:00"
 
 
-def _entity_id(hass, entry, platform, suffix):
+def entity_id_of(hass, entry, platform, entity_key):
     return er.async_get(hass).async_get_entity_id(
-        platform, DOMAIN, f"{entry.entry_id}-{suffix}"
+        platform, DOMAIN, f"{entry.entry_id}-{entity_key}"
     )
 
 
-async def _advance(hass, freezer, when):
-    freezer.move_to(when)
-    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=1))
-    await hass.async_block_till_done()
+def busy_sensor_id(hass, entry):
+    return entity_id_of(hass, entry, "binary_sensor", "busy")
 
 
-async def _setup(hass, entry, freezer, now="2026-11-09T08:00:00+00:00"):
+def location_issue(hass, entry):
+    return ir.async_get(hass).async_get_issue(DOMAIN, f"location_missing_{entry.entry_id}")
+
+
+async def set_up(hass, entry, freezer, now=MORNING):
     freezer.move_to(now)
-    entry.add_to_hass(hass)
-    assert await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-
-async def test_setup_creates_calendar_and_busy_sensor(hass, freezer, mock_api, config_entry):
-    mock_api.events = events_payload(booking("b1", iso(10), iso(10, 45)))
-    await _setup(hass, config_entry, freezer)
-
-    assert config_entry.state is ConfigEntryState.LOADED
-    assert _entity_id(hass, config_entry, "calendar", "calendar")
-    busy = _entity_id(hass, config_entry, "binary_sensor", "busy")
-    assert hass.states.get(busy).state == "off"
-
-
-async def test_busy_follows_lead_and_trail(hass, freezer, mock_api, config_entry):
-    mock_api.events = events_payload(booking("b1", iso(10), iso(10, 45)))
-    await _setup(hass, config_entry, freezer)
-    busy = _entity_id(hass, config_entry, "binary_sensor", "busy")
-
-    await _advance(hass, freezer, "2026-11-09T09:54:00+00:00")
-    assert hass.states.get(busy).state == "off"  # default lead is 5 min
-    await _advance(hass, freezer, "2026-11-09T09:56:00+00:00")
-    assert hass.states.get(busy).state == "on"
-    await _advance(hass, freezer, "2026-11-09T10:49:00+00:00")
-    assert hass.states.get(busy).state == "on"  # trail
-    await _advance(hass, freezer, "2026-11-09T10:51:00+00:00")
-    assert hass.states.get(busy).state == "off"
-
-
-async def test_back_to_back_stays_on(hass, freezer, mock_api, config_entry):
-    mock_api.events = events_payload(
-        booking("b1", iso(10), iso(10, 30)), booking("b2", iso(10, 35), iso(11))
-    )
-    await _setup(hass, config_entry, freezer)
-    busy = _entity_id(hass, config_entry, "binary_sensor", "busy")
-
-    await _advance(hass, freezer, "2026-11-09T10:32:00+00:00")  # in the gap
-    assert hass.states.get(busy).state == "on"
-
-
-async def test_activities_ignored_by_default(hass, freezer, mock_api, config_entry):
-    mock_api.events = events_payload(activity("a1", iso(10), iso(11)))
-    await _setup(hass, config_entry, freezer)
-    busy = _entity_id(hass, config_entry, "binary_sensor", "busy")
-
-    await _advance(hass, freezer, "2026-11-09T10:30:00+00:00")
-    assert hass.states.get(busy).state == "off"
-
-
-async def test_options_change_timing(hass, freezer, mock_api, config_entry):
-    mock_api.events = events_payload(booking("b1", iso(10), iso(10, 45)))
-    config_entry = MockConfigEntry(
-        domain=DOMAIN,
-        title="Kaddio",
-        unique_id=config_entry.unique_id,
-        data=dict(config_entry.data),
-        options={CONF_LEAD_MINUTES: 1, CONF_TRAIL_MINUTES: 1},
-    )
-    await _setup(hass, config_entry, freezer)
-    busy = _entity_id(hass, config_entry, "binary_sensor", "busy")
-
-    await _advance(hass, freezer, "2026-11-09T09:56:00+00:00")
-    assert hass.states.get(busy).state == "off"  # 1 min lead, not 5
-    await _advance(hass, freezer, "2026-11-09T09:59:30+00:00")
-    assert hass.states.get(busy).state == "on"
-
-
-async def test_calendar_shows_event(hass, freezer, mock_api, config_entry):
-    mock_api.events = events_payload(booking("b1", iso(10), iso(10, 45), "Samtal"))
-    await _setup(hass, config_entry, freezer)
-    calendar = _entity_id(hass, config_entry, "calendar", "calendar")
-
-    state = hass.states.get(calendar)
-    assert state.attributes["message"] == "Samtal"
-
-
-async def test_auth_failure_starts_reauth(hass, freezer, mock_api, config_entry):
-    mock_api.error = ConfigEntryAuthFailed("revoked")
-    await _setup_expect_failure(hass, config_entry, freezer)
-
-    assert config_entry.state is ConfigEntryState.SETUP_ERROR
-    flows = hass.config_entries.flow.async_progress_by_handler(DOMAIN)
-    assert any(f["context"]["source"] == "reauth" for f in flows)
-
-
-async def _setup_expect_failure(hass, entry, freezer):
-    freezer.move_to("2026-11-09T08:00:00+00:00")
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
 
 
-async def test_unload(hass, freezer, mock_api, config_entry):
-    await _setup(hass, config_entry, freezer)
-    assert await hass.config_entries.async_unload(config_entry.entry_id)
-    assert config_entry.state is ConfigEntryState.NOT_LOADED
+async def advance_clock_to(hass, freezer, moment):
+    freezer.move_to(moment)
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=1))
+    await hass.async_block_till_done()
 
 
-def _issue(hass, entry):
-    return ir.async_get(hass).async_get_issue(DOMAIN, f"location_missing_{entry.entry_id}")
+def entry_with_options(entry, options):
+    return MockConfigEntry(
+        domain=DOMAIN,
+        title=entry.title,
+        unique_id=entry.unique_id,
+        data=dict(entry.data),
+        options=options,
+    )
 
 
-async def test_notice_when_room_is_deleted_and_cleared_when_back(hass, freezer, mock_api, config_entry):
-    mock_api.rooms = [{"_id": "room1", "deleted": True}]
-    await _setup(hass, config_entry, freezer)
-    assert _issue(hass, config_entry) is not None
+async def test_setup_creates_a_calendar_and_a_busy_sensor(hass, freezer, kaddio_api, room_entry):
+    kaddio_api.events = events_payload(client_meeting("m1", timestamp(10), timestamp(10, 45)))
 
-    mock_api.rooms = [{"_id": "room1", "deleted": False}]
-    await config_entry.runtime_data.async_refresh()
-    assert _issue(hass, config_entry) is None
+    await set_up(hass, room_entry, freezer)
 
-
-async def test_no_notice_when_room_exists(hass, freezer, mock_api, config_entry):
-    await _setup(hass, config_entry, freezer)
-    assert _issue(hass, config_entry) is None
+    assert room_entry.state is ConfigEntryState.LOADED
+    assert entity_id_of(hass, room_entry, "calendar", "calendar")
+    assert hass.states.get(busy_sensor_id(hass, room_entry)).state == "off"
 
 
-async def test_notice_removed_with_entry(hass, freezer, mock_api, config_entry):
-    mock_api.rooms = []
-    await _setup(hass, config_entry, freezer)
-    assert _issue(hass, config_entry) is not None
-    await hass.config_entries.async_remove(config_entry.entry_id)
-    assert _issue(hass, config_entry) is None
+async def test_busy_sensor_follows_lead_and_trail_time(hass, freezer, kaddio_api, room_entry):
+    kaddio_api.events = events_payload(client_meeting("m1", timestamp(10), timestamp(10, 45)))
+    await set_up(hass, room_entry, freezer)
+    busy = busy_sensor_id(hass, room_entry)
+
+    await advance_clock_to(hass, freezer, "2026-11-09T09:54:00+00:00")
+    assert hass.states.get(busy).state == "off"
+    await advance_clock_to(hass, freezer, "2026-11-09T09:56:00+00:00")
+    assert hass.states.get(busy).state == "on"
+    await advance_clock_to(hass, freezer, "2026-11-09T10:49:00+00:00")
+    assert hass.states.get(busy).state == "on"
+    await advance_clock_to(hass, freezer, "2026-11-09T10:51:00+00:00")
+    assert hass.states.get(busy).state == "off"
+
+
+async def test_busy_sensor_stays_on_between_back_to_back_meetings(hass, freezer, kaddio_api, room_entry):
+    kaddio_api.events = events_payload(
+        client_meeting("m1", timestamp(10), timestamp(10, 30)),
+        client_meeting("m2", timestamp(10, 35), timestamp(11)),
+    )
+    await set_up(hass, room_entry, freezer)
+
+    await advance_clock_to(hass, freezer, "2026-11-09T10:32:00+00:00")
+
+    assert hass.states.get(busy_sensor_id(hass, room_entry)).state == "on"
+
+
+async def test_calendar_entries_do_not_make_the_room_busy_by_default(hass, freezer, kaddio_api, room_entry):
+    kaddio_api.events = events_payload(calendar_entry("c1", timestamp(10), timestamp(11)))
+    await set_up(hass, room_entry, freezer)
+
+    await advance_clock_to(hass, freezer, "2026-11-09T10:30:00+00:00")
+
+    assert hass.states.get(busy_sensor_id(hass, room_entry)).state == "off"
+
+
+async def test_calendar_entries_count_when_selected_in_options(hass, freezer, kaddio_api, room_entry):
+    kaddio_api.events = events_payload(calendar_entry("c1", timestamp(10), timestamp(11)))
+    entry = entry_with_options(room_entry, {CONF_EVENT_KINDS: ["booking", "session", "cal"]})
+    await set_up(hass, entry, freezer)
+
+    await advance_clock_to(hass, freezer, "2026-11-09T10:30:00+00:00")
+
+    assert hass.states.get(busy_sensor_id(hass, entry)).state == "on"
+
+
+async def test_lead_and_trail_minutes_come_from_options(hass, freezer, kaddio_api, room_entry):
+    kaddio_api.events = events_payload(client_meeting("m1", timestamp(10), timestamp(10, 45)))
+    entry = entry_with_options(room_entry, {CONF_LEAD_MINUTES: 1, CONF_TRAIL_MINUTES: 1})
+    await set_up(hass, entry, freezer)
+    busy = busy_sensor_id(hass, entry)
+
+    await advance_clock_to(hass, freezer, "2026-11-09T09:56:00+00:00")
+    assert hass.states.get(busy).state == "off"
+    await advance_clock_to(hass, freezer, "2026-11-09T09:59:30+00:00")
+    assert hass.states.get(busy).state == "on"
+
+
+async def test_next_meeting_attributes_ignore_kinds_that_do_not_count(hass, freezer, kaddio_api, room_entry):
+    kaddio_api.events = events_payload(
+        calendar_entry("c1", timestamp(9), timestamp(9, 30)),
+        client_meeting("m1", timestamp(10), timestamp(10, 45), "Samtal"),
+    )
+
+    await set_up(hass, room_entry, freezer)
+
+    attributes = hass.states.get(busy_sensor_id(hass, room_entry)).attributes
+    assert attributes["next_summary"] == "Samtal"
+    assert attributes["next_start"] == timestamp(10)
+
+
+async def test_calendar_shows_the_upcoming_meeting(hass, freezer, kaddio_api, room_entry):
+    kaddio_api.events = events_payload(
+        client_meeting("m1", timestamp(10), timestamp(10, 45), "Samtal")
+    )
+
+    await set_up(hass, room_entry, freezer)
+
+    calendar = entity_id_of(hass, room_entry, "calendar", "calendar")
+    assert hass.states.get(calendar).attributes["message"] == "Samtal"
+
+
+async def test_rejected_token_starts_reauthentication(hass, freezer, kaddio_api, room_entry):
+    kaddio_api.error = ConfigEntryAuthFailed("revoked")
+
+    await set_up(hass, room_entry, freezer)
+
+    assert room_entry.state is ConfigEntryState.SETUP_ERROR
+    flows = hass.config_entries.flow.async_progress_by_handler(DOMAIN)
+    assert any(flow["context"]["source"] == "reauth" for flow in flows)
+
+
+async def test_unloading_the_entry_succeeds(hass, freezer, kaddio_api, room_entry):
+    await set_up(hass, room_entry, freezer)
+
+    assert await hass.config_entries.async_unload(room_entry.entry_id)
+
+    assert room_entry.state is ConfigEntryState.NOT_LOADED
+
+
+async def test_notice_appears_when_the_room_is_deleted_and_clears_when_it_returns(hass, freezer, kaddio_api, room_entry):
+    kaddio_api.rooms = [{"_id": "room1", "deleted": True}]
+    await set_up(hass, room_entry, freezer)
+    assert location_issue(hass, room_entry) is not None
+
+    kaddio_api.rooms = [{"_id": "room1", "deleted": False}]
+    await room_entry.runtime_data.async_refresh()
+
+    assert location_issue(hass, room_entry) is None
+
+
+async def test_no_notice_while_the_room_exists(hass, freezer, kaddio_api, room_entry):
+    await set_up(hass, room_entry, freezer)
+
+    assert location_issue(hass, room_entry) is None
+
+
+async def test_notice_is_removed_together_with_the_entry(hass, freezer, kaddio_api, room_entry):
+    kaddio_api.rooms = []
+    await set_up(hass, room_entry, freezer)
+    assert location_issue(hass, room_entry) is not None
+
+    await hass.config_entries.async_remove(room_entry.entry_id)
+
+    assert location_issue(hass, room_entry) is None

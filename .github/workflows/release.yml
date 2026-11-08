@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Tag must match manifest version
+      - name: Tag must match the manifest version
         run: |
           manifest_version=$(python3 -c "import json; print(json.load(open('custom_components/kaddio/manifest.json'))['version'])")
           if [ "v${manifest_version}" != "${GITHUB_REF_NAME}" ]; then
@@ -24,12 +24,13 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.13"
 
-      - name: Run tests
-        run: python -m unittest discover -s tests -v
+      - run: pip install -r requirements_test.txt
 
-      - name: Create GitHub release
+      - run: pytest -q
+
+      - name: Create the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release create "${GITHUB_REF_NAME}" --title "${GITHUB_REF_NAME}" --generate-notes

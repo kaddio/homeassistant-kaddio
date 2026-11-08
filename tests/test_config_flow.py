@@ -1,76 +1,89 @@
-"""Config flow tests."""
-
 from unittest.mock import AsyncMock, patch
 
 from homeassistant import config_entries
+from homeassistant.const import CONF_NAME, CONF_TOKEN
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from custom_components.kaddio.const import (
+    ALL_LOCATIONS,
     CONF_BASE_URL,
     CONF_LOCATION_ID,
-    CONF_TOKEN,
     DOMAIN,
 )
+from custom_components.kaddio.models import Locations
 
-FETCH = "custom_components.kaddio.config_flow.async_fetch_locations"
+LIST_LOCATIONS = "custom_components.kaddio.client.KaddioClient.async_list_locations"
+KITCHEN_AND_SUPPORT = Locations(rooms={"room1": "Köket"}, places={"place1": "Kaddio Support"})
 
 
-async def _start(hass):
+async def start_flow(hass):
     return await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
 
 
-async def test_full_flow_creates_entry(hass, mock_api):
-    result = await _start(hass)
-    assert result["type"] == FlowResultType.FORM and result["step_id"] == "user"
+async def submit_credentials(hass, flow_id, base_url="https://clinic.kaddio.com", token="token"):
+    return await hass.config_entries.flow.async_configure(
+        flow_id, {CONF_BASE_URL: base_url, CONF_TOKEN: token}
+    )
 
-    with patch(FETCH, AsyncMock(return_value={"room1": "Köket"})):
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"],
-            {CONF_BASE_URL: "clinic.kaddio.com", CONF_TOKEN: "  secret  "},
-        )
-    assert result["step_id"] == "location"
+
+async def test_full_flow_creates_an_entry_for_the_chosen_room(hass):
+    flow = await start_flow(hass)
+    assert flow["step_id"] == "user"
+
+    with patch(LIST_LOCATIONS, AsyncMock(return_value=KITCHEN_AND_SUPPORT)):
+        flow = await submit_credentials(hass, flow["flow_id"], "clinic.kaddio.com", "  secret  ")
+    assert flow["step_id"] == "location"
 
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"name": "Köket", CONF_LOCATION_ID: "room1"}
+        flow["flow_id"], {CONF_NAME: "Köket", CONF_LOCATION_ID: "room1"}
     )
+
     assert result["type"] == FlowResultType.CREATE_ENTRY
     assert result["title"] == "Köket"
     assert result["data"] == {
-        CONF_BASE_URL: "https://clinic.kaddio.com",  # bare host accepted and normalised
-        CONF_TOKEN: "secret",  # whitespace trimmed
+        CONF_BASE_URL: "https://clinic.kaddio.com",
+        CONF_TOKEN: "secret",
         CONF_LOCATION_ID: "room1",
     }
 
 
-async def test_invalid_token(hass):
-    result = await _start(hass)
-    with patch(FETCH, AsyncMock(side_effect=ConfigEntryAuthFailed("no"))):
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"],
-            {CONF_BASE_URL: "https://clinic.kaddio.com", CONF_TOKEN: "bad"},
-        )
+async def test_location_choices_list_everything_then_rooms_then_places(hass):
+    flow = await start_flow(hass)
+    with patch(LIST_LOCATIONS, AsyncMock(return_value=KITCHEN_AND_SUPPORT)):
+        flow = await submit_credentials(hass, flow["flow_id"])
+
+    choices = flow["data_schema"].schema[CONF_LOCATION_ID].container
+
+    assert list(choices) == [ALL_LOCATIONS, "room1", "place1"]
+    assert choices["place1"] == "Kaddio Support (place)"
+
+
+async def test_rejected_token_is_reported_on_the_token_field(hass):
+    flow = await start_flow(hass)
+
+    with patch(LIST_LOCATIONS, AsyncMock(side_effect=ConfigEntryAuthFailed("no"))):
+        result = await submit_credentials(hass, flow["flow_id"], token="bad")
+
     assert result["type"] == FlowResultType.FORM
     assert result["errors"] == {CONF_TOKEN: "invalid_token"}
 
 
-async def test_cannot_connect(hass):
-    result = await _start(hass)
-    with patch(FETCH, AsyncMock(side_effect=UpdateFailed("down"))):
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"],
-            {CONF_BASE_URL: "https://clinic.kaddio.com", CONF_TOKEN: "t"},
-        )
+async def test_unreachable_kaddio_is_reported_as_connection_error(hass):
+    flow = await start_flow(hass)
+
+    with patch(LIST_LOCATIONS, AsyncMock(side_effect=UpdateFailed("down"))):
+        result = await submit_credentials(hass, flow["flow_id"])
+
     assert result["errors"] == {"base": "cannot_connect"}
 
 
-async def test_rejects_non_https_address(hass):
-    result = await _start(hass)
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        {CONF_BASE_URL: "http://clinic.kaddio.com", CONF_TOKEN: "t"},
-    )
+async def test_plain_http_address_is_rejected(hass):
+    flow = await start_flow(hass)
+
+    result = await submit_credentials(hass, flow["flow_id"], base_url="http://clinic.kaddio.com")
+
     assert result["errors"] == {CONF_BASE_URL: "invalid_base_url"}

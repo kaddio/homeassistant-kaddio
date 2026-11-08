@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - custom_components/kaddio/gql.py
+      - custom_components/kaddio/graphql_api.py
       - scripts/check_schema.py
 
 jobs:

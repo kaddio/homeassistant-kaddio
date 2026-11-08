@@ -1,7 +1,12 @@
 {
   "domain": "kaddio",
   "name": "Kaddio",
-  "codeowners": ["@rhymn"],
+  "categories": [
+    "productivity_information.calendars_todos"
+  ],
+  "codeowners": [
+    "@rhymn"
+  ],
   "config_flow": true,
   "documentation": "https://github.com/kaddio/homeassistant-kaddio",
   "integration_type": "service",

@@ -25,7 +25,7 @@ It works per room: connect "Konferensrummet", "Behandlingsrum 1" and so on, each
 
 [![Open your Home Assistant instance and show this repository in the Marketplace.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=kaddio&repository=homeassistant-kaddio&category=integration)
 
-Then click **Download** and **restart Home Assistant** (Settings → System → Restart).
+Then click **Download**. Home Assistant loads the integration right away; if it shows a repair asking for a restart, click it.
 
 **Or do it by hand:**
 
@@ -33,7 +33,7 @@ Then click **Download** and **restart Home Assistant** (Settings → System → 
 2. Click **Add from link**, or open the menu (⋮) → **Custom repositories**, and add
    `https://github.com/kaddio/homeassistant-kaddio` as an **Integration**.
 3. Search for **Kaddio**, open it and click **Download**.
-4. **Restart Home Assistant.**
+4. If Home Assistant shows a repair asking for a restart, click it.
 
 ## Step 2: Create an API key in Kaddio
 
@@ -46,6 +46,8 @@ Then click **Download** and **restart Home Assistant** (Settings → System → 
 You can revoke the key at any time on the same page (**Återkalla**).
 
 ## Step 3: Connect a room
+
+[![Add the Kaddio integration to your Home Assistant.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=kaddio)
 
 1. In Home Assistant, go to **Settings → Devices & services → Add integration** and search for **Kaddio**.
 2. Enter your Kaddio address (for example `myclinic.kaddio.com`) and paste the API key.
@@ -108,8 +110,21 @@ actions:
 ### Heating before the meeting
 
 Heating needs more time than a lamp. Use the room's **Calendar** with Home Assistant's *Calendar* trigger
-(*Event: start*, offset `-0:30:00`) to start 30 minutes early. A ready-made blueprint is in
-`blueprints/automation/kaddio/room_prep.yaml` (import it under Settings → Automations & scenes → Blueprints).
+(*Event: start*, offset `-0:30:00`) to start 30 minutes early:
+
+```yaml
+triggers:
+  - trigger: calendar
+    event: start
+    offset: "-0:30:00"
+    entity_id: calendar.kaddio
+actions:
+  - action: climate.set_temperature
+    target:
+      entity_id: climate.treatment_room
+    data:
+      temperature: 21
+```
 
 ## How it works, and its limits
 
@@ -144,4 +159,6 @@ Logs: Settings → System → Logs, search for `kaddio`. Report problems at
 The code is MIT licensed. The Kaddio name and logos are trademarks of Kaddio AB and are not covered by the MIT
 license.
 
+<!-- ha-marketplace:exclude-start -->
 For developers, see [DEVELOPMENT.md](DEVELOPMENT.md).
+<!-- ha-marketplace:exclude-end -->

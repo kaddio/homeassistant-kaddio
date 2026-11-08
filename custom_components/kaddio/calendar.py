@@ -1,9 +1,3 @@
-"""Calendar platform: exposes the Kaddio feed as a Home Assistant calendar.
-
-Because this is a real calendar entity, the built-in `calendar` automation
-trigger (event start/end with an offset) works out of the box.
-"""
-
 from __future__ import annotations
 
 from datetime import datetime
@@ -11,23 +5,16 @@ from datetime import datetime
 from homeassistant.components.calendar import CalendarEntity, CalendarEvent
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
 from . import KaddioConfigEntry
-from .const import DOMAIN
 from .coordinator import KaddioCoordinator
+from .entity import KaddioEntity
 from .models import KaddioEvent
 
+PARALLEL_UPDATES = 0
 
-def _to_calendar_event(event: KaddioEvent) -> CalendarEvent:
-    return CalendarEvent(
-        start=event.start,
-        end=event.end,
-        summary=event.summary or "Kaddio",
-        description=event.description or None,
-        uid=event.uid,
-    )
+FALLBACK_SUMMARY = "Kaddio"
 
 
 async def async_setup_entry(
@@ -35,34 +22,37 @@ async def async_setup_entry(
     entry: KaddioConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    async_add_entities([KaddioCalendar(entry.runtime_data, entry)])
+    async_add_entities([KaddioCalendar(entry.runtime_data)])
 
 
-class KaddioCalendar(CoordinatorEntity[KaddioCoordinator], CalendarEntity):
-    _attr_has_entity_name = True
+def to_calendar_event(event: KaddioEvent) -> CalendarEvent:
+    return CalendarEvent(
+        start=event.start,
+        end=event.end,
+        summary=event.summary or FALLBACK_SUMMARY,
+        description=event.description or None,
+        uid=event.uid,
+    )
+
+
+class KaddioCalendar(KaddioEntity, CalendarEntity):
     _attr_name = None
 
-    def __init__(self, coordinator: KaddioCoordinator, entry: KaddioConfigEntry) -> None:
-        super().__init__(coordinator)
-        self._attr_unique_id = f"{entry.entry_id}-calendar"
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, entry.entry_id)},
-            "name": entry.title,
-            "manufacturer": "Kaddio",
-            "entry_type": "service",
-        }
+    def __init__(self, coordinator: KaddioCoordinator) -> None:
+        super().__init__(coordinator, "calendar")
 
     @property
     def event(self) -> CalendarEvent | None:
         now = dt_util.now()
-        current = self.coordinator.current_event(now)
-        upcoming = current or self.coordinator.next_event(now)
-        return _to_calendar_event(upcoming) if upcoming else None
+        relevant = self.coordinator.find_event_in_progress(
+            now
+        ) or self.coordinator.find_next_event(now)
+        return to_calendar_event(relevant) if relevant else None
 
     async def async_get_events(
         self, hass: HomeAssistant, start_date: datetime, end_date: datetime
     ) -> list[CalendarEvent]:
         return [
-            _to_calendar_event(e)
-            for e in self.coordinator.events_between(start_date, end_date)
+            to_calendar_event(event)
+            for event in self.coordinator.events_between(start_date, end_date)
         ]
