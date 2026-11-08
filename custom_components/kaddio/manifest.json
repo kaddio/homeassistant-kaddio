@@ -1,7 +1,7 @@
 {
   "domain": "kaddio",
   "name": "Kaddio",
-  "codeowners": ["@kaddio"],
+  "codeowners": ["@rhymn"],
   "config_flow": true,
   "documentation": "https://github.com/kaddio/homeassistant-kaddio",
   "integration_type": "service",
