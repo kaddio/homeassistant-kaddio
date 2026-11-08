@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timedelta
 
-from aiohttp import ClientError
+from aiohttp import ClientError, ClientTimeout
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
@@ -45,7 +45,7 @@ async def _post_graphql(
             graphql_endpoint(base_url),
             json={"query": query, "variables": variables or {}},
             headers={"Authorization": token},
-            timeout=30,
+            timeout=ClientTimeout(total=30),
         ) as response:
             if response.status in (401, 403):
                 raise ConfigEntryAuthFailed("Kaddio rejected the API token")

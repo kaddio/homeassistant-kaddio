@@ -18,11 +18,13 @@ required; the organization needs the API module.
 
 ## Tests
 
-```
-python3 -m unittest discover -s tests
-```
+- `tests/test_pure_*.py` – logic with no Home Assistant imports. Run anywhere:
+  `python3 -m unittest discover -s tests -p 'test_pure_*.py'`
+- `tests/test_config_flow.py`, `tests/test_integration.py` – run inside Home Assistant (setup flow, entities, busy
+  timing with a fake clock, reauth). Need Python 3.13 or newer:
+  `pip install -r requirements_test.txt && pytest`
 
-CI also runs hassfest and the HACS action.
+CI runs both, plus hassfest and the HACS action.
 
 ## Releasing
 
