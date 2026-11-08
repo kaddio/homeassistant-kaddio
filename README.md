@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/kaddio/homeassistant-kaddio/main/custom_components/kaddio/brand/dark_logo.png">
+    <img alt="Kaddio" src="https://raw.githubusercontent.com/kaddio/homeassistant-kaddio/main/custom_components/kaddio/brand/logo.png" height="64">
+  </picture>
+</p>
+
 # Kaddio for Home Assistant
 
 Let your Kaddio calendar run your rooms. When a client is booked in a room, the lights come on a few minutes
@@ -8,19 +15,28 @@ It works per room: connect "Konferensrummet", "Behandlingsrum 1" and so on, each
 
 ## What you need
 
-- **Home Assistant** version 2024.12 or newer, with [HACS](https://hacs.xyz) installed.
+- **Home Assistant** version 2024.12 or newer. Before version 2026.11 you also need [HACS](https://hacs.xyz); from 2026.11 it is built in as the **Marketplace** (Settings → Marketplace).
 - **A Kaddio account with administrator rights**, at an organization that has the **API** module.
 - Something in the room that Home Assistant can control: a smart plug, a light, a thermostat.
 
 ## Step 1: Enable the integration in Home Assistant
 
-1. In Home Assistant, open **HACS**.
-2. Click the menu (⋮) in the top right and choose **Custom repositories**.
-3. Paste `https://github.com/kaddio/homeassistant-kaddio`, set the type to **Integration**, and click **Add**.
-4. Search for **Kaddio** in HACS, open it, and click **Download**.
-5. **Restart Home Assistant** (Settings → System → Restart).
+**Quickest:** click this button while logged in to your Home Assistant.
 
-> Once Kaddio is listed in the official HACS store, steps 2 and 3 are no longer needed: just search for Kaddio.
+[![Open your Home Assistant instance and open this repository in HACS / the Marketplace.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=kaddio&repository=homeassistant-kaddio&category=integration)
+
+Then click **Download** and **restart Home Assistant** (Settings → System → Restart).
+
+**Or do it by hand:**
+
+1. Open **HACS** (or **Settings → Marketplace** on Home Assistant 2026.11 and newer).
+2. Add the repository as a custom repository: in HACS, open the menu (⋮) → **Custom repositories**, paste
+   `https://github.com/kaddio/homeassistant-kaddio`, set the type to **Integration** and click **Add**.
+   (In the Marketplace, use its option to add a repository from a link; menu names may differ slightly.)
+3. Search for **Kaddio**, open it and click **Download**.
+4. **Restart Home Assistant.**
+
+> Once Kaddio is listed in the official catalog, you can skip the custom repository step and just search for Kaddio.
 
 ## Step 2: Create an API key in Kaddio
 
