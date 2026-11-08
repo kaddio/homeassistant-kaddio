@@ -1,73 +1,134 @@
 # Kaddio for Home Assistant
 
-Use your [Kaddio](https://kaddio.com) calendar to control your home or clinic:
-lights on before a session, off after it, "do not disturb" signs, heating, and so on.
+Let your Kaddio calendar run your rooms. When a client is booked in a room, the lights come on a few minutes
+before and go off a few minutes after. The same signal can warm up the room, switch a "meeting in progress" sign,
+or anything else Home Assistant can control.
 
-The integration uses the Kaddio GraphQL API with an **administrator API token**, and creates one calendar per Kaddio room
-(or place, or one for the whole organization). The organization needs the Kaddio API module. Only times, titles and booking type names are
-requested; client data is never read.
+It works per room: connect "Konferensrummet", "Behandlingsrum 1" and so on, each with its own timing.
 
-## What you get
+## What you need
 
-| Entity | Purpose |
+- **Home Assistant** version 2024.12 or newer, with [HACS](https://hacs.xyz) installed.
+- **A Kaddio account with administrator rights**, at an organization that has the **API** module.
+- Something in the room that Home Assistant can control: a smart plug, a light, a thermostat.
+
+## Step 1: Enable the integration in Home Assistant
+
+1. In Home Assistant, open **HACS**.
+2. Click the menu (⋮) in the top right and choose **Custom repositories**.
+3. Paste `https://github.com/kaddio/homeassistant-kaddio`, set the type to **Integration**, and click **Add**.
+4. Search for **Kaddio** in HACS, open it, and click **Download**.
+5. **Restart Home Assistant** (Settings → System → Restart).
+
+> Once Kaddio is listed in the official HACS store, steps 2 and 3 are no longer needed: just search for Kaddio.
+
+## Step 2: Create an API key in Kaddio
+
+1. In Kaddio, go to **Inställningar → API**.
+2. Click **Ny API-nyckel** and name it, for example `Home Assistant`.
+3. Under **Tillåtna GraphQL-endpoints**, select only these three, so the key can do nothing else:
+   `findEventsIndexed`, `findRooms` and `findPlaces`.
+4. Click **Skapa nyckel** and **copy the key**. It is shown only once.
+
+You can revoke the key at any time on the same page (**Återkalla**).
+
+## Step 3: Connect a room
+
+1. In Home Assistant, go to **Settings → Devices & services → Add integration** and search for **Kaddio**.
+2. Enter your Kaddio address (for example `myclinic.kaddio.com`) and paste the API key.
+3. Choose the **room** (a *Rum* in Kaddio's settings). You can also choose a *Plats*, or everything.
+4. Give it a name, for example the room's name.
+
+Repeat for each room you want to automate. Each room gets:
+
+| Entity | What it tells you |
 | --- | --- |
-| `calendar.<name>` | Client meetings, group sessions and calendar entries for a room. Works with Home Assistant's built-in **Calendar** automation trigger (event start/end with an offset). |
-| `binary_sensor.<name>_busy` | On from *N* minutes before an entry starts until *N* minutes after it ends (configurable). Attributes: `current_summary`, `next_start`, `next_summary`. |
+| **Calendar** | The room's bookings and activities, visible in Home Assistant's calendar. |
+| **Busy** (*Upptagen*) | **On** from a few minutes before a booking starts until a few minutes after it ends. |
 
-## Installation (HACS)
+## Step 4: Tune what counts and when
 
-1. HACS → ⋮ → **Custom repositories** → add `https://github.com/kaddio/homeassistant-kaddio` as *Integration*
-   (not needed once Kaddio is in the HACS default list).
-2. Install **Kaddio**, restart Home Assistant.
-3. Settings → Devices & services → **Add integration** → *Kaddio*.
-4. Enter your Kaddio address (for example `https://myclinic.kaddio.com`) and an administrator API token.
-5. Pick a room (a *Rum* in Kaddio's settings), a place (*Plats*), or everything.
+Open the integration, click the gear icon next to the room, and set:
 
-Add the integration once per room you want to automate.
+- **What counts as busy:** client meetings and group sessions by default. Tick *Calendar entries*
+  (*Kalenderposter*) to include activities too, such as a cleaning block.
+- **Minutes before start / after end:** how early the room switches on and how long it stays on.
+  Back-to-back bookings keep the room on without switching off in between.
 
-## Example: heat 30 min before, lights 5 min before, off 5 min after
+## Step 5: Control something
 
-Import the blueprint `blueprints/automation/kaddio/room_prep.yaml`, pick the room's calendar and busy sensor, your
-lights and thermostat. Only **client meetings and group sessions** count as busy by
-default (change under the integration's *Configure*), so a lunch block in the calendar does not heat the room.
-Back-to-back meetings keep the lights on: they only go off when the gap is longer than lead + trail.
+1. Go to **Settings → Automations & scenes → Create automation → Create new automation**.
+2. **When:** add *State*, pick the room's **Busy** sensor, and set it to **on**.
+3. **Then do:** add the action to turn on your light or switch, and pick it from the list.
+4. Create a second automation the same way: Busy sensor **off** → turn the light or switch **off**.
 
-Prefer YAML? Any offset works with Home Assistant's calendar trigger:
+Prefer one automation? Open its ⋮ menu → **Edit in YAML** and paste this, replacing the two entity IDs with
+yours (smart plugs are `switch.…`; for lights use `light.turn_on` / `light.turn_off`):
 
 ```yaml
-trigger:
-  - platform: calendar
-    event: start
-    offset: "-0:30:00"       # heating: 30 min before
-    entity_id: calendar.kaddio_room_1
-action:
-  - service: climate.set_temperature
-    target: { entity_id: climate.room_1 }
-    data: { temperature: 21 }
+alias: Kaddio - room follows bookings
+mode: restart
+triggers:
+  - trigger: state
+    entity_id: binary_sensor.kaddio_busy
+    to: "on"
+    id: "on"
+  - trigger: state
+    entity_id: binary_sensor.kaddio_busy
+    to: "off"
+    id: "off"
+actions:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: "on"
+        sequence:
+          - action: switch.turn_on
+            target:
+              entity_id: switch.treatment_room_lamp
+    default:
+      - action: switch.turn_off
+        target:
+          entity_id: switch.treatment_room_lamp
 ```
+
+### Heating before the meeting
+
+Heating needs more time than a lamp. Use the room's **Calendar** with Home Assistant's *Calendar* trigger
+(*Event: start*, offset `-0:30:00`) to start 30 minutes early. A ready-made blueprint is in
+`blueprints/automation/kaddio/room_prep.yaml` (import it under Settings → Automations & scenes → Blueprints).
+
+## How it works, and its limits
+
+- Kaddio is checked **every 15 minutes**. A new, moved or cancelled booking can take up to 15 minutes to be noticed.
+  To refresh at once: Devices & services → Kaddio → ⋮ → **Reload**.
+- Only **bookings, group sessions and calendar entries** that have the room selected are used. Events without a
+  room are not seen when you connect a single room.
+- It reads from 1 day back to 60 days ahead.
 
 ## Privacy and security
 
-The API token is stored in Home Assistant and gives administrator access to the Kaddio API, so create a token
-dedicated to Home Assistant and revoke it in Kaddio if it leaks; Home Assistant will then ask for a new one.
-Only times, titles and booking type names are requested. The calendar is refreshed every 15 minutes and covers one
-day back to 60 days ahead; the busy sensor changes state at exact times between refreshes.
+- Only times, the booking type name and (for activities) the title and note are read. **No client names, journal
+  notes, prices or invoices are ever requested.**
+- The API key is stored in Home Assistant. Use a key dedicated to Home Assistant, limited to the three endpoints
+  above, and revoke it in Kaddio if you stop using the integration.
 
-## Development
+## Troubleshooting
 
-```
-python3 -m unittest discover -s tests
-```
+| Problem | What to check |
+| --- | --- |
+| "Kaddio refused the token" when connecting | The key must be created by an administrator at an organization with the API module, and the three endpoints must be allowed. |
+| The room list is empty | The organization has no rooms or places set up in Kaddio. |
+| A booking doesn't show up | It must have this room selected, and may need up to 15 minutes, or reload the integration. |
+| An activity doesn't turn the Busy sensor on | Tick *Calendar entries* in the integration's options. |
+| Nothing happens in the room | Check the Busy sensor first, then the automation's trace (*Show trace*), then try the light or plug by hand. |
 
-## Releasing
-
-1. Bump `version` in `custom_components/kaddio/manifest.json` and push to `main`.
-2. Tag and push: `git tag v<version> && git push origin v<version>`.
-
-The *Release* workflow checks that the tag matches the manifest version, runs the tests and publishes the GitHub
-release with generated notes. HACS then offers it as an update.
+Logs: Settings → System → Logs, search for `kaddio`. Report problems at
+[github.com/kaddio/homeassistant-kaddio/issues](https://github.com/kaddio/homeassistant-kaddio/issues).
 
 ## License and trademarks
 
-The code is MIT licensed. The Kaddio name and logos (`brand/`) are trademarks of Kaddio AB; the MIT license does not
-grant rights to them. `scripts/build_brand.sh` regenerates the PNGs in `custom_components/kaddio/brand/` from the SVGs.
+The code is MIT licensed. The Kaddio name and logos are trademarks of Kaddio AB and are not covered by the MIT
+license.
+
+For developers, see [DEVELOPMENT.md](DEVELOPMENT.md).
