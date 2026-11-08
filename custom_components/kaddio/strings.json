@@ -16,12 +16,12 @@
           "token": "API token"
         }
       },
-      "place": {
+      "location": {
         "title": "Choose room",
-        "description": "Create one calendar per room or place. Run the setup again to add more.",
+        "description": "Creates one calendar for the room (or place) you choose. Run the setup again to add more rooms.",
         "data": {
           "name": "Name",
-          "place_id": "Room / place"
+          "location_id": "Room"
         }
       }
     },

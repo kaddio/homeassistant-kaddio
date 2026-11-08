@@ -14,9 +14,9 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import dt as dt_util
 
 from .const import (
-    ALL_PLACES,
+    ALL_LOCATIONS,
     CONF_BASE_URL,
-    CONF_PLACE_ID,
+    CONF_LOCATION_ID,
     CONF_TOKEN,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
@@ -25,11 +25,11 @@ from .const import (
 )
 from .gql import (
     EVENTS_QUERY,
-    PLACES_QUERY,
+    LOCATIONS_QUERY,
     GraphQLApiError,
     events_from_response,
     graphql_endpoint,
-    places_from_response,
+    locations_from_response,
 )
 from .models import KaddioEvent
 
@@ -65,23 +65,23 @@ def _raise_for(err: GraphQLApiError):
     raise UpdateFailed(str(err)) from err
 
 
-async def async_fetch_places(hass: HomeAssistant, base_url: str, token: str) -> dict[str, str]:
-    """Return {place_id: name}. Raises ConfigEntryAuthFailed/UpdateFailed."""
-    payload = await _post_graphql(hass, base_url, token, PLACES_QUERY, None)
+async def async_fetch_locations(hass: HomeAssistant, base_url: str, token: str) -> dict[str, str]:
+    """Return {location_id: name}. Raises ConfigEntryAuthFailed/UpdateFailed."""
+    payload = await _post_graphql(hass, base_url, token, LOCATIONS_QUERY, None)
     try:
-        return places_from_response(payload)
+        return locations_from_response(payload)
     except GraphQLApiError as err:
         _raise_for(err)
 
 
 async def async_fetch_graphql_events(
-    hass: HomeAssistant, base_url: str, token: str, place_id: str | None
+    hass: HomeAssistant, base_url: str, token: str, location_id: str | None
 ) -> list[KaddioEvent]:
     now = dt_util.utcnow()
     variables = {
         "start": (now - timedelta(days=GRAPHQL_PAST_DAYS)).isoformat(),
         "end": (now + timedelta(days=GRAPHQL_FUTURE_DAYS)).isoformat(),
-        "locationId": place_id,
+        "locationId": location_id,
     }
     payload = await _post_graphql(hass, base_url, token, EVENTS_QUERY, variables)
     try:
@@ -106,12 +106,12 @@ class KaddioCoordinator(DataUpdateCoordinator[list[KaddioEvent]]):
 
     async def _async_update_data(self) -> list[KaddioEvent]:
         data = self.config_entry.data
-        place_id = data[CONF_PLACE_ID]
+        location_id = data[CONF_LOCATION_ID]
         return await async_fetch_graphql_events(
             self.hass,
             data[CONF_BASE_URL],
             data[CONF_TOKEN],
-            None if place_id == ALL_PLACES else place_id,
+            None if location_id == ALL_LOCATIONS else location_id,
         )
 
     def events_between(self, start: datetime, end: datetime) -> list[KaddioEvent]:

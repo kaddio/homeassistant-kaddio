@@ -46,14 +46,20 @@ class GqlTest(unittest.TestCase):
 
     def test_other_error_is_not_auth(self):
         with self.assertRaises(gql.GraphQLApiError) as ctx:
-            gql.places_from_response({"errors": [{"message": "boom"}]})
+            gql.locations_from_response({"errors": [{"message": "boom"}]})
         self.assertFalse(ctx.exception.is_auth_error)
 
-    def test_places_skip_deleted(self):
-        payload = {"data": {"findPlaces": [
-            {"_id": "a", "name": "Rum 1", "deleted": False},
-            {"_id": "b", "name": "Gammalt", "deleted": True}]}}
-        self.assertEqual(gql.places_from_response(payload), {"a": "Rum 1"})
+    def test_locations_rooms_first_places_labelled_deleted_skipped(self):
+        payload = {"data": {
+            "findRooms": [
+                {"_id": "r1", "name": "Köket", "deleted": False},
+                {"_id": "r2", "name": "Borttaget", "deleted": True}],
+            "findPlaces": [
+                {"_id": "p1", "name": "Kaddio Support", "deleted": False},
+                {"_id": "p2", "name": "Gammal", "deleted": True}]}}
+        result = gql.locations_from_response(payload)
+        self.assertEqual(result, {"r1": "Köket", "p1": "Kaddio Support (place)"})
+        self.assertEqual(list(result), ["r1", "p1"])
 
     def test_bad_dates_skipped(self):
         payload = {"data": {"findEventsIndexed": [row("1", "booking", "nope", "x", bt="A")]}}

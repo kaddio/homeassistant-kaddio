@@ -16,12 +16,12 @@
           "token": "API-token"
         }
       },
-      "place": {
+      "location": {
         "title": "Välj rum",
-        "description": "Skapar en kalender per rum eller plats. Kör installationen igen för att lägga till fler.",
+        "description": "Skapar en kalender för det rum (eller den plats) du väljer. Kör installationen igen för att lägga till fler rum.",
         "data": {
           "name": "Namn",
-          "place_id": "Rum / plats"
+          "location_id": "Rum"
         }
       }
     },

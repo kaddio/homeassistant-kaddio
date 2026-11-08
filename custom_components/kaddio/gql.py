@@ -1,7 +1,7 @@
 """Kaddio GraphQL helpers (queries and response mapping, no Home Assistant imports).
 
 Uses the organization-wide API: `findEventsIndexed` (admin token, org must have
-the API module enabled) and `findPlaces`. Client data is deliberately never
+the API module enabled) and `findRooms`/`findPlaces`. Client data is deliberately never
 requested; only titles, times and the booking type name.
 """
 
@@ -12,7 +12,12 @@ from typing import Any
 
 from .models import KaddioEvent
 
-PLACES_QUERY = "query { findPlaces { _id name deleted } }"
+LOCATIONS_QUERY = """
+query {
+  findRooms { _id name deleted }
+  findPlaces { _id name deleted }
+}
+"""
 
 EVENTS_QUERY = """
 query ($start: Date!, $end: Date!, $locationId: ID) {
@@ -59,10 +64,19 @@ def unwrap(payload: dict[str, Any]) -> dict[str, Any]:
     return payload.get("data") or {}
 
 
-def places_from_response(payload: dict[str, Any]) -> dict[str, str]:
-    """Return {place_id: name} for non-deleted places."""
-    places = unwrap(payload).get("findPlaces") or []
-    return {p["_id"]: p["name"] for p in places if not p.get("deleted")}
+def locations_from_response(payload: dict[str, Any]) -> dict[str, str]:
+    """Return {id: label}: rooms first, then places (labelled as such).
+
+    The events query filters on either kind of id (`locationId`).
+    """
+    data = unwrap(payload)
+    rooms = {r["_id"]: r["name"] for r in data.get("findRooms") or [] if not r.get("deleted")}
+    places = {
+        p["_id"]: f"{p['name']} (place)"
+        for p in data.get("findPlaces") or []
+        if not p.get("deleted")
+    }
+    return rooms | places
 
 
 def events_from_response(payload: dict[str, Any]) -> list[KaddioEvent]:

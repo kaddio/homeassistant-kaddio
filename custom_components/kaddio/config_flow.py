@@ -14,18 +14,18 @@ from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from . import KaddioConfigEntry
 from .const import (
-    ALL_PLACES,
+    ALL_LOCATIONS,
     CONF_BASE_URL,
     CONF_EVENT_KINDS,
     CONF_LEAD_MINUTES,
-    CONF_PLACE_ID,
+    CONF_LOCATION_ID,
     CONF_TOKEN,
     CONF_TRAIL_MINUTES,
     DEFAULT_LEAD_MINUTES,
     DEFAULT_TRAIL_MINUTES,
     DOMAIN,
 )
-from .coordinator import async_fetch_places
+from .coordinator import async_fetch_locations
 from .schedule import ALL_KINDS, DEFAULT_KINDS
 
 
@@ -45,7 +45,7 @@ class KaddioConfigFlow(ConfigFlow, domain=DOMAIN):
     def __init__(self) -> None:
         self._base_url: str | None = None
         self._token: str | None = None
-        self._places: dict[str, str] = {}
+        self._locations: dict[str, str] = {}
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -58,14 +58,14 @@ class KaddioConfigFlow(ConfigFlow, domain=DOMAIN):
             else:
                 token = user_input[CONF_TOKEN].strip()
                 try:
-                    places = await async_fetch_places(self.hass, base_url, token)
+                    locations = await async_fetch_locations(self.hass, base_url, token)
                 except ConfigEntryAuthFailed:
                     errors[CONF_TOKEN] = "invalid_token"
                 except UpdateFailed:
                     errors["base"] = "cannot_connect"
                 else:
-                    self._base_url, self._token, self._places = base_url, token, places
-                    return await self.async_step_place()
+                    self._base_url, self._token, self._locations = base_url, token, locations
+                    return await self.async_step_location()
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema(
@@ -74,28 +74,28 @@ class KaddioConfigFlow(ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
-    async def async_step_place(
+    async def async_step_location(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         if user_input is not None:
-            place_id = user_input[CONF_PLACE_ID]
-            await self.async_set_unique_id(f"{self._base_url}|{place_id}")
+            location_id = user_input[CONF_LOCATION_ID]
+            await self.async_set_unique_id(f"{self._base_url}|{location_id}")
             self._abort_if_unique_id_configured()
             return self.async_create_entry(
                 title=user_input["name"],
                 data={
                     CONF_BASE_URL: self._base_url,
                     CONF_TOKEN: self._token,
-                    CONF_PLACE_ID: place_id,
+                    CONF_LOCATION_ID: location_id,
                 },
             )
-        options = {ALL_PLACES: "All rooms / places"} | self._places
+        options = {ALL_LOCATIONS: "All rooms and places"} | self._locations
         return self.async_show_form(
-            step_id="place",
+            step_id="location",
             data_schema=vol.Schema(
                 {
                     vol.Required("name", default="Kaddio"): str,
-                    vol.Required(CONF_PLACE_ID, default=ALL_PLACES): vol.In(options),
+                    vol.Required(CONF_LOCATION_ID, default=ALL_LOCATIONS): vol.In(options),
                 }
             ),
         )
@@ -111,7 +111,7 @@ class KaddioConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             token = user_input[CONF_TOKEN].strip()
             try:
-                await async_fetch_places(self.hass, entry.data[CONF_BASE_URL], token)
+                await async_fetch_locations(self.hass, entry.data[CONF_BASE_URL], token)
             except ConfigEntryAuthFailed:
                 errors[CONF_TOKEN] = "invalid_token"
             except UpdateFailed:

@@ -3,8 +3,8 @@
 Use your [Kaddio](https://kaddio.com) calendar to control your home or clinic:
 lights on before a session, off after it, "do not disturb" signs, heating, and so on.
 
-The integration uses the Kaddio GraphQL API with an **administrator API token**, and creates one calendar per room
-(or one for all rooms). The organization needs the Kaddio API module. Only times, titles and booking type names are
+The integration uses the Kaddio GraphQL API with an **administrator API token**, and creates one calendar per Kaddio room
+(or place, or one for the whole organization). The organization needs the Kaddio API module. Only times, titles and booking type names are
 requested; client data is never read.
 
 ## What you get
@@ -21,7 +21,7 @@ requested; client data is never read.
 2. Install **Kaddio**, restart Home Assistant.
 3. Settings → Devices & services → **Add integration** → *Kaddio*.
 4. Enter your Kaddio address (for example `https://myclinic.kaddio.com`) and an administrator API token.
-5. Pick a room, or *All rooms*.
+5. Pick a room (a *Rum* in Kaddio's settings), a place (*Plats*), or everything.
 
 Add the integration once per room you want to automate.
 

@@ -6,8 +6,8 @@ DOMAIN = "kaddio"
 
 CONF_BASE_URL = "base_url"
 CONF_TOKEN = "token"
-CONF_PLACE_ID = "place_id"
-ALL_PLACES = "__all__"
+CONF_LOCATION_ID = "location_id"
+ALL_LOCATIONS = "__all__"
 GRAPHQL_PAST_DAYS = 1
 GRAPHQL_FUTURE_DAYS = 60
 CONF_LEAD_MINUTES = "lead_minutes"
